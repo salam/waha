@@ -9,10 +9,6 @@ import {
   AppsService,
   IAppsService,
 } from '@waha/apps/app_sdk/services/IAppsService';
-import { EngineBootstrap } from '@waha/core/abc/EngineBootstrap';
-import { GowsEngineConfigService } from '@waha/core/config/GowsEngineConfigService';
-import { WebJSEngineConfigService } from '@waha/core/config/WebJSEngineConfigService';
-import { WhatsappSessionGoWSCore } from '@waha/core/engines/gows/session.gows.core';
 import { WebhookConductor } from '@waha/core/integrations/webhooks/WebhookConductor';
 import { MediaStorageFactory } from '@waha/core/media/MediaStorageFactory';
 import { DefaultMap } from '@waha/utils/DefaultMap';
@@ -42,7 +38,6 @@ import { populateSessionInfo, SessionManager } from './abc/manager.abc';
 import { SessionParams, WhatsappSession } from './abc/session.abc';
 import { EngineConfigService } from './config/EngineConfigService';
 import { WhatsappSessionNoWebCore } from './engines/noweb/session.noweb.core';
-import { WhatsappSessionWebJSCore } from './engines/webjs/session.webjs.core';
 import { DOCS_URL } from './exceptions';
 import { getProxyConfig } from './helpers.proxy';
 import { MediaManager } from './media/MediaManager';
@@ -78,24 +73,19 @@ export class SessionManagerCore extends SessionManager implements OnModuleInit {
 
   protected readonly EngineClass: typeof WhatsappSession;
   protected events2: DefaultMap<WAHAEvents, SwitchObservable<any>>;
-  protected readonly engineBootstrap: EngineBootstrap;
 
   constructor(
     config: WhatsappConfigService,
     private engineConfigService: EngineConfigService,
-    private webjsEngineConfigService: WebJSEngineConfigService,
-    gowsConfigService: GowsEngineConfigService,
     log: PinoLogger,
     private mediaStorageFactory: MediaStorageFactory,
     @Inject(AppsService)
     appsService: IAppsService,
   ) {
-    super(log, config, gowsConfigService, appsService);
+    super(log, config, appsService);
     this.session = DefaultSessionStatus.STOPPED;
     this.sessionConfig = null;
-    const engineName = this.engineConfigService.getDefaultEngineName();
-    this.EngineClass = this.getEngine(engineName);
-    this.engineBootstrap = this.getEngineBootstrap(engineName);
+    this.EngineClass = WhatsappSessionNoWebCore;
 
     this.events2 = new DefaultMap<WAHAEvents, SwitchObservable<any>>(
       (key) =>
@@ -104,6 +94,7 @@ export class SessionManagerCore extends SessionManager implements OnModuleInit {
         }),
     );
 
+    const engineName = this.engineConfigService.getDefaultEngineName();
     this.store = new LocalStoreCore(engineName.toLowerCase());
     this.sessionAuthRepository = new LocalSessionAuthRepository(this.store);
     this.clearStorage().catch((error) => {
@@ -112,15 +103,10 @@ export class SessionManagerCore extends SessionManager implements OnModuleInit {
   }
 
   protected getEngine(engine: WAHAEngine): typeof WhatsappSession {
-    if (engine === WAHAEngine.WEBJS) {
-      return WhatsappSessionWebJSCore;
-    } else if (engine === WAHAEngine.NOWEB) {
+    if (engine === WAHAEngine.NOWEB) {
       return WhatsappSessionNoWebCore;
-    } else if (engine === WAHAEngine.GOWS) {
-      return WhatsappSessionGoWSCore;
-    } else {
-      throw new NotFoundException(`Unknown whatsapp engine '${engine}'.`);
     }
+    throw new NotFoundException(`Unknown whatsapp engine '${engine}'.`);
   }
 
   private onlyDefault(name: string) {
@@ -134,12 +120,10 @@ export class SessionManagerCore extends SessionManager implements OnModuleInit {
       await this.stop(this.DEFAULT, true);
     }
     this.stopEvents();
-    await this.engineBootstrap.shutdown();
   }
 
   async onApplicationBootstrap() {
     this.apiKeyRepository = new CoreApiKeyRepository();
-    await this.engineBootstrap.bootstrap();
     this.startPredefinedSessions();
   }
 
@@ -204,11 +188,6 @@ export class SessionManagerCore extends SessionManager implements OnModuleInit {
       sessionConfig: this.sessionConfig,
       ignore: this.ignoreChatsConfig(this.sessionConfig),
     };
-    if (this.EngineClass === WhatsappSessionWebJSCore) {
-      sessionConfig.engineConfig = this.webjsEngineConfigService.getConfig();
-    } else if (this.EngineClass === WhatsappSessionGoWSCore) {
-      sessionConfig.engineConfig = this.gowsConfigService.getConfig();
-    }
     await this.sessionAuthRepository.init(name);
     // @ts-ignore
     const session = new this.EngineClass(sessionConfig);

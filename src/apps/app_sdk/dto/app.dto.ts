@@ -1,5 +1,3 @@
-import { ChatWootAppConfig } from '@waha/apps/chatwoot/dto/config.dto';
-import { CallsAppConfig } from '@waha/apps/calls/dto/config.dto';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
@@ -8,13 +6,10 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { ApiExtraModels, ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import { AppName } from '@waha/apps/app_sdk/apps/name';
 
-export type AllowedAppConfig = ChatWootAppConfig | CallsAppConfig;
-
-@ApiExtraModels(ChatWootAppConfig, CallsAppConfig)
-export class App<T extends AllowedAppConfig = any> {
+export class App<T = any> {
   @IsString()
   id: string;
 
@@ -36,30 +31,6 @@ export class App<T extends AllowedAppConfig = any> {
   enabled?: boolean = true;
 
   @ValidateNested()
-  @Type((options) => {
-    if (options && options.object && options.object.app) {
-      switch (options.object.app) {
-        case AppName.chatwoot:
-          return ChatWootAppConfig;
-        case AppName.calls:
-          return CallsAppConfig;
-        default:
-          return Object;
-      }
-    }
-    return Object;
-  })
+  @Type(() => Object)
   config: T;
 }
-
-export class ChatWootAppDto extends App<ChatWootAppConfig> {
-  @Type(() => ChatWootAppConfig)
-  config: ChatWootAppConfig;
-}
-
-export class CallsAppDto extends App<CallsAppConfig> {
-  @Type(() => CallsAppConfig)
-  config: CallsAppConfig;
-}
-
-export type AppDto = ChatWootAppDto | CallsAppDto;

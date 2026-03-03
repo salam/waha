@@ -21,8 +21,6 @@ import { IApiKeyAuth } from '@waha/core/auth/auth';
 import { ApiKeyAuthMiddleware } from '@waha/core/auth/api-key-auth.middleware';
 import { BasicAuthFunction } from '@waha/core/auth/basicAuth';
 import { WebSocketAuth } from '@waha/core/auth/WebSocketAuth';
-import { GowsEngineConfigService } from '@waha/core/config/GowsEngineConfigService';
-import { WebJSEngineConfigService } from '@waha/core/config/WebJSEngineConfigService';
 import { MediaLocalStorageModule } from '@waha/core/media/local/media.local.storage.module';
 import { MediaLocalStorageConfig } from '@waha/core/media/local/MediaLocalStorageConfig';
 import { ChannelsInfoServiceCore } from '@waha/core/services/ChannelsInfoServiceCore';
@@ -52,7 +50,6 @@ import { LabelsController } from '../api/labels.controller';
 import { MediaController } from '../api/media.controller';
 import { PingController } from '../api/ping.controller';
 import { PresenceController } from '../api/presence.controller';
-import { ScreenshotController } from '../api/screenshot.controller';
 import { SessionsController } from '../api/sessions.controller';
 import { StatusController } from '../api/status.controller';
 import { VersionController } from '../api/version.controller';
@@ -83,9 +80,7 @@ export const IMPORTS_CORE = [
           return (
             req.url.startsWith('/ping') ||
             req.url.startsWith('/dashboard/') ||
-            req.url.startsWith('/api/files/') ||
-            req.url.startsWith('/api/s3/') ||
-            req.url.startsWith('/jobs/')
+            req.url.startsWith('/api/files/')
           );
         },
       },
@@ -133,7 +128,7 @@ const IMPORTS_MEDIA = [
   ConfigModule.forRoot({
     validationSchema: Joi.object({
       WAHA_MEDIA_STORAGE: Joi.string()
-        .valid('LOCAL', 'S3', 'POSTGRESQL')
+        .valid('LOCAL')
         .default('LOCAL'),
     }),
   }),
@@ -158,7 +153,6 @@ export const CONTROLLERS = [
   LidsController,
   GroupsController,
   PresenceController,
-  ScreenshotController,
   EventsController,
   PingController,
   HealthController,
@@ -175,8 +169,6 @@ export const PROVIDERS_BASE: Provider[] = [
   },
   DashboardConfigServiceCore,
   SwaggerConfigServiceCore,
-  WebJSEngineConfigService,
-  GowsEngineConfigService,
   WhatsappConfigService,
   EngineConfigService,
   WebsocketGatewayCore,

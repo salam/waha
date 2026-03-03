@@ -62,7 +62,13 @@ import {
   timestamp,
 } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
-import { MessageId } from 'whatsapp-web.js';
+// Inline type replacing whatsapp-web.js MessageId
+interface MessageId {
+  fromMe: boolean;
+  remote: string;
+  id: string;
+  _serialized: string;
+}
 
 import {
   ChatRequest,
@@ -142,15 +148,7 @@ const qrcode = require('qrcode-terminal');
 
 axiosRetry(axios, { retries: 3 });
 
-const CHROME_PATH = '/usr/bin/google-chrome-stable';
-const CHROMIUM_PATH = '/usr/bin/chromium';
-
-export function getBrowserExecutablePath() {
-  if (fs.existsSync(CHROME_PATH)) {
-    return CHROME_PATH;
-  }
-  return CHROMIUM_PATH;
-}
+// Browser executable path is not needed for NOWEB engine
 
 export function ensureSuffix(phone) {
   const suffix = '@c.us';
@@ -359,68 +357,6 @@ export abstract class WhatsappSession {
     return this._presence;
   }
 
-  getBrowserExecutablePath() {
-    return getBrowserExecutablePath();
-  }
-
-  getBrowserArgsForPuppeteer() {
-    // Run optimized version of Chrome
-    // References:
-    // https://github.com/pedroslopez/whatsapp-web.js/issues/1420
-    // https://github.com/wppconnect-team/wppconnect/issues/1326
-    // https://superuser.com/questions/654565/how-to-run-google-chrome-in-a-single-process
-    // https://www.bannerbear.com/blog/ways-to-speed-up-puppeteer-screenshots/
-    return [
-      '--disable-accelerated-2d-canvas',
-      '--disable-application-cache',
-      // DO NOT disable software rasterizer, it will break the video
-      // https://github.com/devlikeapro/waha/issues/629
-      // '--disable-software-rasterizer',
-      '--disable-client-side-phishing-detection',
-      '--disable-component-update',
-      '--disable-default-apps',
-      '--disable-dev-shm-usage',
-      '--disable-extensions',
-      '--disable-metrics',
-      // '--disable-features=site-per-process', // COMMENTED to test WEBJS stability
-      '--disable-gpu', // COMMENTED to test WEBJS stability
-      '--disable-offer-store-unmasked-wallet-cards',
-      '--disable-offline-load-stale-cache',
-      '--disable-popup-blocking',
-      '--disable-setuid-sandbox',
-      '--disable-site-isolation-trials',
-      '--disable-speech-api',
-      '--disable-sync',
-      '--disable-translate',
-      '--disable-web-security',
-      '--hide-scrollbars',
-      '--ignore-certificate-errors',
-      '--ignore-ssl-errors',
-      // https://github.com/devlikeapro/waha/issues/725
-      // '--in-process-gpu', // COMMENTED to test WEBJS stability
-      '--metrics-recording-only',
-      '--mute-audio',
-      '--no-default-browser-check',
-      '--no-first-run',
-      '--no-pings',
-      '--no-sandbox',
-      '--no-zygote',
-      '--password-store=basic',
-      '--renderer-process-limit=2',
-      '--safebrowsing-disable-auto-update',
-      '--use-mock-keychain',
-      '--window-size=1280,720',
-      '--disable-blink-features=AutomationControlled',
-      //
-      // Cache options
-      //
-      '--disk-cache-size=1073741824', // 1GB
-      // '--disk-cache-size=0',
-      // '--disable-cache',
-      // '--aggressive-cache-discard',
-    ];
-  }
-
   protected isDebugEnabled() {
     return this.logger.isLevelEnabled('debug');
   }
@@ -615,7 +551,7 @@ export abstract class WhatsappSession {
         await this.setPresence(WAHAPresenceStatus.ONLINE);
         this.logger.debug('Set presence to ONLINE due to activity');
       } catch (error) {
-        this.logger.debug('Failed to set presence ONLINE', error);
+        this.logger.debug({ error }, 'Failed to set presence ONLINE');
         return;
       }
     }
@@ -637,7 +573,7 @@ export abstract class WhatsappSession {
         );
       } catch (error) {
         this.presence = WAHAPresenceStatus.OFFLINE;
-        this.logger.debug('Failed to set presence OFFLINE', error);
+        this.logger.debug({ error }, 'Failed to set presence OFFLINE');
       }
       this.cleanupPresenceTimeout();
     }, this.presenceAutoOnlineConfig.duration);

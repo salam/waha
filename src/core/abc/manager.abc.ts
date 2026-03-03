@@ -7,11 +7,8 @@ import {
 import { IAppsService } from '@waha/apps/app_sdk/services/IAppsService';
 import { WhatsappConfigService } from '@waha/config.service';
 import {
-  EngineBootstrap,
   NoopEngineBootstrap,
 } from '@waha/core/abc/EngineBootstrap';
-import { GowsEngineConfigService } from '@waha/core/config/GowsEngineConfigService';
-import { GowsBootstrap } from '@waha/core/engines/gows/GowsBootstrap';
 import { ISessionMeRepository } from '@waha/core/storage/ISessionMeRepository';
 import { ISessionWorkerRepository } from '@waha/core/storage/ISessionWorkerRepository';
 import { IgnoreJidConfig } from '@waha/core/utils/jids';
@@ -60,7 +57,6 @@ export abstract class SessionManager
   protected constructor(
     protected log: PinoLogger,
     protected config: WhatsappConfigService,
-    protected gowsConfigService: GowsEngineConfigService,
     protected readonly appsService: IAppsService,
   ) {
     this.lock = new AsyncLock({
@@ -227,12 +223,7 @@ export abstract class SessionManager
     return;
   }
 
-  protected getEngineBootstrap(engine: WAHAEngine): EngineBootstrap {
-    const logger = this.log.logger.child({ engine: engine.toLowerCase() });
-    if (engine === WAHAEngine.GOWS) {
-      const config = this.gowsConfigService.getBootstrapConfig();
-      return new GowsBootstrap(logger, config);
-    }
+  protected getEngineBootstrap(engine: WAHAEngine) {
     return new NoopEngineBootstrap();
   }
 

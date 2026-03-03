@@ -7,19 +7,20 @@ export class WAHAEnvironment {
   version: string;
 
   @ApiProperty({
-    example: 'WEBJS',
+    example: 'NOWEB',
   })
   engine: string;
 
   @ApiProperty({
-    example: 'PLUS',
+    example: 'CORE',
   })
   tier: string;
 
   @ApiProperty({
-    example: '/usr/path/to/bin/google-chrome',
+    example: null,
+    nullable: true,
   })
-  browser: string;
+  browser: string | null;
 
   @ApiProperty({
     example: 'linux/x86',
