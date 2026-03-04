@@ -19,6 +19,12 @@ import { AllExceptionsFilter } from './nestjs/AllExceptionsFilter';
 import { getWAHAVersion, VERSION, WAHAVersion } from './version';
 import { loadESMModules } from '@waha/vendor/esm';
 import { setGlobalDispatcher, Agent } from 'undici';
+import * as crypto from 'crypto';
+
+// Polyfill globalThis.crypto for Node 18 (added as global in Node 19+)
+if (!globalThis.crypto) {
+  (globalThis as any).crypto = crypto.webcrypto;
+}
 
 setGlobalDispatcher(new Agent({ connect: { family: 4 } } as any));
 
