@@ -5,7 +5,6 @@ import * as path from 'path';
 import { Logger } from 'pino';
 import fs = require('fs');
 import { fileExists } from '@waha/utils/files';
-import { deleteAsync } from 'del';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const writeFileAtomic = require('write-file-atomic');
@@ -59,11 +58,12 @@ export class MediaLocalStorage implements IMediaStorage {
     }
 
     if (fs.existsSync(this.filesFolder)) {
-      deleteAsync([`${this.filesFolder}/*`], { force: true }).then((paths) => {
-        if (paths.length === 0) {
-          return;
+      fsp.readdir(this.filesFolder).then(async (entries) => {
+        if (entries.length === 0) return;
+        for (const entry of entries) {
+          await fsp.rm(path.join(this.filesFolder, entry), { recursive: true, force: true });
         }
-        this.log.info(`Deleted files and directories:\n${paths.join('\n')}`);
+        this.log.info(`Deleted files and directories:\n${entries.join('\n')}`);
       });
     } else {
       fs.mkdirSync(this.filesFolder);
