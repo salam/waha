@@ -20,7 +20,7 @@ import { getWAHAVersion, VERSION, WAHAVersion } from './version';
 import { loadESMModules } from '@waha/vendor/esm';
 import { setGlobalDispatcher, Agent } from 'undici';
 
-setGlobalDispatcher(new Agent({ connect: { family: 4 } }));
+setGlobalDispatcher(new Agent({ connect: { family: 4 } } as any));
 
 const logger: Logger = pino({
   level: getPinoLogLevel(),
